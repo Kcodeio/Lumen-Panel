@@ -3,7 +3,7 @@
 # Lumen Panel - One-command installer
 #
 # Usage:
-#   curl -s https://example.com/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/Kcodeio/Lumen-Panel/main/install.sh | sudo bash
 #   sudo bash install.sh
 #   sudo bash install.sh --repair
 #   sudo bash install.sh --uninstall
@@ -14,7 +14,7 @@ set -Eeuo pipefail
 # Globals
 # ---------------------------------------------------------------------------
 LUMEN_VERSION="1.0.0"
-LUMEN_REPO_URL="${LUMEN_REPO_URL:-https://github.com/Kcodeio/lumen-panel}"
+LUMEN_REPO_URL="${LUMEN_REPO_URL:-https://github.com/Kcodeio/Lumen-Panel}"
 LUMEN_INSTALL_DIR="/opt/lumen"
 LUMEN_CONFIG_DIR="/etc/lumen"
 LUMEN_LOG_DIR="/var/log/lumen"
@@ -61,7 +61,6 @@ load_translations() {
     local lang="$1"
     local i18n_file=""
 
-    # Try to find i18n files in multiple locations
     if [[ -n "$SOURCE_DIR" && -f "$SOURCE_DIR/installer/i18n/${lang}.sh" ]]; then
         i18n_file="$SOURCE_DIR/installer/i18n/${lang}.sh"
     elif [[ -f "./installer/i18n/${lang}.sh" ]]; then
@@ -314,7 +313,6 @@ create_user() {
         useradd --system --home "$LUMEN_INSTALL_DIR" --shell /usr/sbin/nologin "$LUMEN_USER"
         log_ok "Created user $LUMEN_USER"
     fi
-    # Allow lumen to talk to docker
     if getent group docker >/dev/null; then
         usermod -aG docker "$LUMEN_USER"
         log_ok "Added $LUMEN_USER to docker group"
@@ -344,9 +342,13 @@ fetch_sources() {
         cp -r /tmp/lumen-installer/. "$LUMEN_INSTALL_DIR/"
     else
         log_info "Cloning from $LUMEN_REPO_URL"
+        # Mark as a safe directory so re-running as root after a previous install doesn't trip git
+        git config --global --add safe.directory "$LUMEN_INSTALL_DIR" || true
         if [[ -d "$LUMEN_INSTALL_DIR/.git" ]]; then
             (cd "$LUMEN_INSTALL_DIR" && git pull --quiet)
         else
+            # Make sure target dir is empty before cloning
+            rm -rf "$LUMEN_INSTALL_DIR"
             git clone --quiet "$LUMEN_REPO_URL" "$LUMEN_INSTALL_DIR"
         fi
     fi
@@ -359,6 +361,17 @@ fetch_sources() {
 # ---------------------------------------------------------------------------
 generate_secrets() {
     log_step "$(t generating_keys)"
+
+    # In repair mode, keep existing secrets so existing JWTs/sessions stay valid
+    if [[ $REPAIR_MODE -eq 1 && -f "$LUMEN_CONFIG_DIR/panel.env" ]]; then
+        log_info "Keeping existing secrets (repair mode)"
+        # Make writable for setup-UI again
+        chown root:"$LUMEN_USER" "$LUMEN_CONFIG_DIR/panel.env" "$LUMEN_CONFIG_DIR/agent.env"
+        chmod 660 "$LUMEN_CONFIG_DIR/panel.env" "$LUMEN_CONFIG_DIR/agent.env"
+        log_ok "Existing secrets reused"
+        return
+    fi
+
     local jwt_secret api_key node_key
     jwt_secret=$(openssl rand -hex 48)
     api_key=$(openssl rand -hex 32)
@@ -383,8 +396,12 @@ LUMEN_PANEL_URL=http://127.0.0.1:${LUMEN_PORT_PANEL}
 LUMEN_DATA_DIR=${LUMEN_DATA_DIR}
 LUMEN_LOG_DIR=${LUMEN_LOG_DIR}
 EOF
-    chmod 640 "$LUMEN_CONFIG_DIR/panel.env" "$LUMEN_CONFIG_DIR/agent.env"
+    # 0660 (rw for root + lumen group) so the setup wizard, which runs as
+    # the lumen user, can rewrite this file with admin email/timezone/etc.
+    # Permissions are tightened back to 0640 in install_services() once
+    # the wizard has finished.
     chown root:"$LUMEN_USER" "$LUMEN_CONFIG_DIR/panel.env" "$LUMEN_CONFIG_DIR/agent.env"
+    chmod 660 "$LUMEN_CONFIG_DIR/panel.env" "$LUMEN_CONFIG_DIR/agent.env"
     log_ok "Secrets generated"
 }
 
@@ -428,11 +445,17 @@ build_venvs() {
 # Setup wizard
 # ---------------------------------------------------------------------------
 run_setup_wizard() {
+    # In repair mode, if setup already ran successfully, skip the wizard
+    if [[ $REPAIR_MODE -eq 1 && -f "$LUMEN_DATA_DIR/.setup-complete" ]]; then
+        log_step "$(t starting_setup)"
+        log_ok "Setup already completed, skipping wizard"
+        return
+    fi
+
     log_step "$(t starting_setup)"
     local server_ip
     server_ip=$(detect_server_ip)
 
-    # Export everything needed by the setup UI
     export LUMEN_INSTALL_DIR LUMEN_CONFIG_DIR LUMEN_DATA_DIR LUMEN_LOG_DIR
     export LUMEN_PORT_SETUP LUMEN_DEFAULT_DOMAIN="$server_ip"
 
@@ -451,7 +474,6 @@ run_setup_wizard() {
 
     local setup_pid=$!
 
-    # Wait for it to come up
     local tries=0
     until curl -fsS "http://127.0.0.1:${LUMEN_PORT_SETUP}/health" >/dev/null 2>&1; do
         sleep 1
@@ -471,7 +493,6 @@ run_setup_wizard() {
     echo
     log_info "$(t waiting_setup)"
 
-    # Poll for completion marker
     local marker="$LUMEN_DATA_DIR/.setup-complete"
     while [[ ! -f "$marker" ]]; do
         if ! kill -0 "$setup_pid" 2>/dev/null; then
@@ -484,7 +505,6 @@ run_setup_wizard() {
 
     log_ok "$(t setup_done)"
 
-    # Stop setup server
     kill "$setup_pid" 2>/dev/null || true
     sleep 1
     kill -9 "$setup_pid" 2>/dev/null || true
@@ -546,6 +566,15 @@ WantedBy=multi-user.target
 EOF
 
     systemctl daemon-reload
+
+    # Setup wizard is done — tighten env file permissions back to read-only for the lumen group
+    if [[ -f "$LUMEN_CONFIG_DIR/panel.env" ]]; then
+        chmod 640 "$LUMEN_CONFIG_DIR/panel.env"
+    fi
+    if [[ -f "$LUMEN_CONFIG_DIR/agent.env" ]]; then
+        chmod 640 "$LUMEN_CONFIG_DIR/agent.env"
+    fi
+
     log_ok "Services installed"
 }
 
@@ -622,7 +651,6 @@ uninstall() {
     systemctl disable lumen-agent lumen-panel 2>/dev/null || true
     rm -f /etc/systemd/system/lumen-panel.service /etc/systemd/system/lumen-agent.service
     systemctl daemon-reload
-    # Stop any running game containers
     if command -v docker >/dev/null 2>&1; then
         docker ps -a --filter "label=com.lumen.managed=1" --format '{{.ID}}' \
             | xargs -r docker rm -f >/dev/null 2>&1 || true
