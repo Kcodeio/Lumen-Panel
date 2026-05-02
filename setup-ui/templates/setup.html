@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lumen Panel · Setup</title>
+<style>
+:root {
+  --ink: #1c1917;
+  --paper: #faf6ee;
+  --paper-2: #f3ecdf;
+  --rule: #d6cab2;
+  --accent: #b8390e;
+  --accent-2: #2a4d3a;
+  --ok: #2a4d3a;
+  --err: #a02914;
+  --muted: #7a6e5a;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  background:
+    radial-gradient(1100px 600px at 110% -10%, #f4ead4 0%, transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, #efe5cd 0%, transparent 55%),
+    var(--paper);
+  color: var(--ink);
+  font-family: "Cormorant Garamond", "EB Garamond", Georgia, "Times New Roman", serif;
+  min-height: 100vh;
+}
+.frame {
+  max-width: 760px;
+  margin: 32px auto;
+  padding: 0 24px 64px;
+}
+.masthead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-bottom: 2px solid var(--ink);
+  padding: 18px 0;
+}
+.masthead .brand {
+  font-family: "Playfair Display", Georgia, serif;
+  font-weight: 900;
+  letter-spacing: 6px;
+  font-size: 28px;
+}
+.masthead .brand em {
+  color: var(--accent);
+  font-style: normal;
+}
+.masthead .meta {
+  font-family: ui-monospace, "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.kicker {
+  font-family: ui-monospace, Consolas, monospace;
+  letter-spacing: 5px;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 32px 0 8px;
+}
+h1 {
+  font-family: "Playfair Display", Georgia, serif;
+  font-weight: 900;
+  font-size: 52px;
+  line-height: 1.05;
+  margin: 0 0 14px;
+}
+.lede {
+  font-size: 19px;
+  line-height: 1.5;
+  color: #3b352c;
+  margin-bottom: 28px;
+  max-width: 60ch;
+}
+
+.card {
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 28px;
+  margin-bottom: 22px;
+  box-shadow: 0 1px 0 rgba(28,25,23,0.04), inset 0 0 0 1px #faf6ee;
+}
+.card h2 {
+  margin: 0 0 18px;
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 22px;
+  border-bottom: 1px dashed var(--rule);
+  padding-bottom: 10px;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.card h2 .num {
+  font-family: ui-monospace, Consolas, monospace;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 11px;
+  letter-spacing: 2px;
+  padding: 4px 8px;
+  border-radius: 2px;
+}
+label {
+  display: block;
+  font-family: ui-monospace, Consolas, monospace;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--muted);
+  margin: 14px 0 6px;
+}
+input[type="text"], input[type="email"], input[type="password"],
+input[type="number"], select {
+  width: 100%;
+  padding: 12px 14px;
+  font-family: inherit;
+  font-size: 17px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+}
+input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.row { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
+@media (max-width: 560px) { .row { grid-template-columns: 1fr; } }
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 13px;
+  color: #3b352c;
+  margin-top: 8px;
+}
+.checkbox input { width: 18px; height: 18px; }
+
+.actions {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-top: 28px;
+}
+button.primary {
+  background: var(--ink);
+  color: var(--paper);
+  border: 1px solid var(--ink);
+  padding: 14px 28px;
+  font-family: ui-monospace, Consolas, monospace;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.1s;
+}
+button.primary:hover { background: var(--accent); border-color: var(--accent); transform: translateY(-1px); }
+button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.note { font-size: 13px; color: var(--muted); }
+
+.flash {
+  border-left: 4px solid var(--err);
+  background: rgba(160,41,20,0.08);
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-size: 14px;
+}
+.flash.ok { border-left-color: var(--ok); background: rgba(42,77,58,0.08); }
+
+.success-screen {
+  text-align: center;
+  padding: 60px 20px;
+}
+.success-screen .seal {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 80px;
+  color: var(--accent-2);
+  line-height: 1;
+}
+.success-screen h1 { font-size: 44px; }
+.success-screen p { font-size: 18px; color: var(--muted); }
+.password-display {
+  margin: 24px auto;
+  padding: 18px;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 16px;
+  border-radius: 2px;
+  display: inline-block;
+  letter-spacing: 1px;
+  word-break: break-all;
+}
+
+footer {
+  margin-top: 40px;
+  border-top: 1px solid var(--rule);
+  padding-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+</style>
+</head>
+<body>
+
+<div class="frame">
+
+<header class="masthead">
+  <div class="brand">LUMEN<em>·</em>PANEL</div>
+  <div class="meta">SETUP &nbsp;·&nbsp; v{{ version }}</div>
+</header>
+
+{% if completed %}
+<div class="success-screen">
+  <div class="seal">✦</div>
+  <p class="kicker">Setup complete</p>
+  <h1>You're all set.</h1>
+  <p>The installer is finishing up. This page will go offline shortly.</p>
+  {% if generated_password %}
+  <div>
+    <p style="margin-top:30px"><strong>Your admin password (save it now):</strong></p>
+    <div class="password-display">{{ generated_password }}</div>
+  </div>
+  {% endif %}
+  <p style="margin-top:30px">
+    The panel will be available at:<br>
+    <code style="font-size:18px">http://{{ domain }}:8000</code>
+  </p>
+</div>
+{% else %}
+
+<p class="kicker">Step one of one</p>
+<h1>Configure your panel.</h1>
+<p class="lede">
+  This page is a one-time setup wizard running locally on your server. After you
+  submit, it will shut itself down and the real Lumen Panel will start.
+</p>
+
+{% if error %}
+<div class="flash">{{ error }}</div>
+{% endif %}
+
+<form method="POST" action="/submit" id="setupForm" autocomplete="off">
+
+<div class="card">
+  <h2><span class="num">01</span> Administrator account</h2>
+  <label for="email">Admin email</label>
+  <input id="email" name="email" type="email" required value="{{ form.email or '' }}"
+         placeholder="you@example.com" />
+
+  <div class="row">
+    <div>
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password"
+             minlength="8" maxlength="128"
+             placeholder="leave blank to auto-generate" />
+    </div>
+    <div>
+      <label for="password_confirm">Confirm password</label>
+      <input id="password_confirm" name="password_confirm" type="password"
+             minlength="8" maxlength="128"
+             placeholder="must match" />
+    </div>
+  </div>
+  <p class="note">If you leave both password fields blank, we'll generate a strong one and show it on the next screen.</p>
+</div>
+
+<div class="card">
+  <h2><span class="num">02</span> Network</h2>
+  <div class="row">
+    <div>
+      <label for="domain">Public domain or IP</label>
+      <input id="domain" name="domain" type="text" required
+             value="{{ form.domain or default_domain }}"
+             placeholder="panel.example.com" />
+    </div>
+    <div>
+      <label for="port_start">Game port range start</label>
+      <input id="port_start" name="port_start" type="number" min="1024" max="65000"
+             value="{{ form.port_start or 25565 }}" />
+    </div>
+  </div>
+  <div class="row">
+    <div>
+      <label for="port_end">Game port range end</label>
+      <input id="port_end" name="port_end" type="number" min="1024" max="65535"
+             value="{{ form.port_end or 25600 }}" />
+    </div>
+    <div>
+      <label for="timezone">Timezone</label>
+      <select id="timezone" name="timezone">
+        {% for tz in timezones %}
+          <option value="{{ tz }}" {% if form.timezone == tz %}selected{% endif %}>{{ tz }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2><span class="num">03</span> Optional</h2>
+  <label class="checkbox">
+    <input type="checkbox" name="create_default_mc" value="1"
+           {% if form.create_default_mc %}checked{% endif %} />
+    Create a default Minecraft server after install
+  </label>
+  <label class="checkbox">
+    <input type="checkbox" name="enable_telemetry" value="1"
+           {% if form.enable_telemetry %}checked{% endif %} />
+    Enable anonymous telemetry (helps improve Lumen)
+  </label>
+</div>
+
+<div class="actions">
+  <button type="submit" class="primary" id="submitBtn">Finish setup &nbsp;→</button>
+  <span class="note">This will close the wizard and start the real panel.</span>
+</div>
+
+</form>
+
+{% endif %}
+
+<footer>
+  <span>LUMEN PANEL</span>
+  <span>{{ year }} &nbsp;·&nbsp; LOCAL SETUP</span>
+</footer>
+
+</div>
+
+<script>
+const form = document.getElementById("setupForm");
+if (form) {
+  form.addEventListener("submit", e => {
+    const pw = document.getElementById("password").value;
+    const pw2 = document.getElementById("password_confirm").value;
+    if (pw && pw !== pw2) {
+      e.preventDefault();
+      alert("Passwords do not match.");
+      return;
+    }
+    document.getElementById("submitBtn").disabled = true;
+    document.getElementById("submitBtn").textContent = "Saving…";
+  });
+}
+</script>
+
+</body>
+</html>
