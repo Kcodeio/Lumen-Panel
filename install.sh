@@ -14,7 +14,7 @@ set -Eeuo pipefail
 # Globals
 # ---------------------------------------------------------------------------
 LUMEN_VERSION="1.0.0"
-LUMEN_REPO_URL="${LUMEN_REPO_URL:-https://github.com/example/lumen-panel}"
+LUMEN_REPO_URL="${LUMEN_REPO_URL:-https://github.com/Kcodeio/lumen-panel}"
 LUMEN_INSTALL_DIR="/opt/lumen"
 LUMEN_CONFIG_DIR="/etc/lumen"
 LUMEN_LOG_DIR="/var/log/lumen"
