@@ -710,6 +710,7 @@ main() {
     create_user
     setup_directories
     fetch_sources
+    apply_python_fix
     generate_secrets
     configure_firewall
     build_venvs
