@@ -27,7 +27,7 @@ A self-hosted, single-machine game server management panel — like a much simpl
 ## Install
 
 ```bash
-curl -fsSL https://example.com/install.sh | sudo bash
+curl -fsSL https://github.com/Kcodeio/lumen-panel/install.sh | sudo bash
 ```
 
 Or from a local checkout:
