@@ -326,6 +326,7 @@ setup_directories() {
     mkdir -p "$LUMEN_INSTALL_DIR" "$LUMEN_CONFIG_DIR" "$LUMEN_LOG_DIR" "$LUMEN_DATA_DIR"
     mkdir -p "$LUMEN_DATA_DIR/servers" "$LUMEN_DATA_DIR/db"
     chown -R "$LUMEN_USER:$LUMEN_USER" "$LUMEN_INSTALL_DIR" "$LUMEN_LOG_DIR" "$LUMEN_DATA_DIR"
+    chown root:"$LUMEN_USER" "$LUMEN_CONFIG_DIR"
     chmod 750 "$LUMEN_CONFIG_DIR"
     log_ok "Directories ready"
 }
