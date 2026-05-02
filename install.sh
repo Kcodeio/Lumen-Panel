@@ -325,7 +325,10 @@ setup_directories() {
     mkdir -p "$LUMEN_DATA_DIR/servers" "$LUMEN_DATA_DIR/db"
     chown -R "$LUMEN_USER:$LUMEN_USER" "$LUMEN_INSTALL_DIR" "$LUMEN_LOG_DIR" "$LUMEN_DATA_DIR"
     chown root:"$LUMEN_USER" "$LUMEN_CONFIG_DIR"
-    chmod 750 "$LUMEN_CONFIG_DIR"
+    # 0770 during install so the setup wizard (running as lumen) can create
+    # admin.txt and rewrite env files. Tightened to 0750 in install_services()
+    # once the wizard finishes.
+    chmod 770 "$LUMEN_CONFIG_DIR"
     log_ok "Directories ready"
 }
 
@@ -368,6 +371,8 @@ generate_secrets() {
         # Make writable for setup-UI again
         chown root:"$LUMEN_USER" "$LUMEN_CONFIG_DIR/panel.env" "$LUMEN_CONFIG_DIR/agent.env"
         chmod 660 "$LUMEN_CONFIG_DIR/panel.env" "$LUMEN_CONFIG_DIR/agent.env"
+        # Make sure the dir is writable for the wizard during repair too
+        chmod 770 "$LUMEN_CONFIG_DIR"
         log_ok "Existing secrets reused"
         return
     fi
@@ -567,13 +572,18 @@ EOF
 
     systemctl daemon-reload
 
-    # Setup wizard is done — tighten env file permissions back to read-only for the lumen group
+    # Setup wizard is done — tighten permissions on all config files and the dir
     if [[ -f "$LUMEN_CONFIG_DIR/panel.env" ]]; then
         chmod 640 "$LUMEN_CONFIG_DIR/panel.env"
     fi
     if [[ -f "$LUMEN_CONFIG_DIR/agent.env" ]]; then
         chmod 640 "$LUMEN_CONFIG_DIR/agent.env"
     fi
+    if [[ -f "$LUMEN_CONFIG_DIR/admin.txt" ]]; then
+        chown root:"$LUMEN_USER" "$LUMEN_CONFIG_DIR/admin.txt"
+        chmod 640 "$LUMEN_CONFIG_DIR/admin.txt"
+    fi
+    chmod 750 "$LUMEN_CONFIG_DIR"
 
     log_ok "Services installed"
 }
